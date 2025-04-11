@@ -1,0 +1,48 @@
+{
+  "name": "$CUCKG",
+  "symbol": "GP",
+  "description": "# Are You Ready For\n## The \"REAL WORLD\"?\n## The real Andrew Tate!\nYes... Your fav role model might not be who you think he is. Introducing **$CUCKG**, a bold satirical NFT with a mission. When 1000 *Tate’s Secrets* NFTs are minted, insider content will be revealed.\n\nBurn **$CUCKG** to mint *Tate’s Secrets* NFT.\n\nAll minting wallets will receive a 2:1 token airdrop of *Tristan Tate Coin*, tied to upcoming disclosures.\n\n## We got a **$CUCKG** to expose!",
+  "image": "https://gateway.pinata.cloud/ipfs/bafybeiesqihxuiprim3tl6v6nnwdsj5x4cb75wjuddumjphcnvgkbuq5pi",
+  "external_url": "https://gateway.pinata.cloud/ipfs/bafybeiesqihxuiprim3tl6v6nnwdsj5x4cb75wjuddumjphcnvgkbuq5pi",
+  "attributes": [
+    {
+      "trait_type": "Theme",
+      "value": "Satire"
+    },
+    {
+      "trait_type": "Drop Type",
+      "value": "Controversial Reveal"
+    },
+    {
+      "trait_type": "Burnable",
+      "value": "Yes"
+    },
+    {
+      "trait_type": "Airdrop Eligible",
+      "value": "Tristan Tate Coin"
+    },
+    {
+      "trait_type": "Mint Goal",
+      "value": "1000"
+    }
+  ],
+  "collection": {
+    "name": "Tate Secrets",
+    "family": "$CUCKG Series"
+  },
+  "properties": {
+    "files": [
+      {
+        "uri": "https://gateway.pinata.cloud/ipfs/bafybeiesqihxuiprim3tl6v6nnwdsj5x4cb75wjuddumjphcnvgkbuq5pi",
+        "type": "image/gif"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "YourWalletAddressHere",
+        "share": 100
+      }
+    ]
+  }
+}
