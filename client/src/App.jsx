@@ -1,98 +1,146 @@
-import React, { useState } from "react";
-import Navbar from "./components/Navbar";
+import React, { useCallback, useState } from "react";
+import { Connection, clusterApiUrl } from "@solana/web3.js";
+import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
+import { useWallet } from "@solana/wallet-adapter-react";
+import {
+  WalletModalProvider,
+  WalletMultiButton,
+} from "@solana/wallet-adapter-react-ui";
+import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
+import {
+  ConnectionProvider,
+  WalletProvider,
+} from "@solana/wallet-adapter-react";
+import { Metaplex, walletAdapterIdentity } from "@metaplex-foundation/js";
+import "@solana/wallet-adapter-react-ui/styles.css";
+import "./App.css"; // import custom global styling
 
 const App = () => {
-  const [walletConnected, setWalletConnected] = useState(false);
-  const [walletAddress, setWalletAddress] = useState(null);
-  const [mintInfo, setMintInfo] = useState(null); // State to hold mint info
+  const wallet = useWallet();
+  const [mintedData, setMintedData] = useState(null);
+  const [isMinting, setIsMinting] = useState(false);
 
-  const connectWallet = async () => {
-    if (window.solana && window.solana.isPhantom) {
-      try {
-        await window.solana.connect();
-        setWalletConnected(true);
-        setWalletAddress(window.solana.publicKey.toString());
-      } catch (error) {
-        console.error("Error connecting wallet:", error);
-      }
-    } else {
-      alert("Please install Phantom wallet");
+  const handleMint = useCallback(async () => {
+    if (!wallet.connected || !wallet.publicKey) {
+      return alert("Connect wallet first");
     }
-  };
 
-  const handleMint = async () => {
-    if (!walletConnected) return alert("Connect wallet first");
+    setIsMinting(true);
+    const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
+
+    const metaplex = Metaplex.make(connection).use(
+      walletAdapterIdentity(wallet)
+    );
 
     try {
-      const response = await fetch("http://localhost:5000/mint", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletAddress }),
+      const { nft } = await metaplex.nfts().create({
+        uri: "https://gateway.pinata.cloud/ipfs/bafkreifcj6cxi2nbdpdzoq2g66fbsedzlt2elxpsvzbrieejh5n6fa5oz4",
+        name: "My Client NFT",
+        sellerFeeBasisPoints: 500,
       });
 
-      const result = await response.json();
-      console.log("Mint result:", result);
+      console.log("Minted NFT:", nft);
+      setMintedData(nft);
 
-      if (result.signature) {
-        setMintInfo({
-          mint: result.signature, // Mint address from the response
-          tokenAccount: result.tokenAccount || "Not available", // You can append token account info if returned
-        });
-      }
-    } catch (error) {
-      console.error("Minting error:", error);
+      // Save to localStorage
+      const existing = JSON.parse(localStorage.getItem("mintedNFTs") || "[]");
+      const newList = [
+        ...existing,
+        {
+          name: nft.name,
+          address: nft.address.toBase58(),
+          image: nft.json?.image,
+          timestamp: new Date().toISOString(),
+        },
+      ];
+      localStorage.setItem("mintedNFTs", JSON.stringify(newList));
+    } catch (e) {
+      console.error("Mint failed:", e);
+      alert("Error minting NFT");
+    } finally {
+      setIsMinting(false);
     }
-  };
+  }, [wallet]);
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <Navbar onConnectWallet={connectWallet} walletConnected={walletConnected} />
-      <div className="p-6 flex flex-col items-center">
-        {walletConnected && (
-          <div className="mb-4 text-green-600 font-semibold">
-            Wallet Connected: {walletAddress}
+    <div className="app-container">
+      <div className="content-box">
+        <WalletMultiButton />
+        <button
+          onClick={handleMint}
+          disabled={!wallet.connected || isMinting}
+          className={`mint-button ${isMinting ? "disabled" : ""}`}
+        >
+          {isMinting ? "Minting..." : "Mint NFT"}
+        </button>
+
+        {mintedData && (
+          <div className="mint-result">
+            <p className="success">✅ NFT minted successfully!</p>
+            <p>
+              <strong>Mint Address:</strong>{" "}
+              <a
+                href={`https://explorer.solana.com/address/${mintedData.address.toBase58()}?cluster=devnet`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {mintedData.address.toBase58()}
+              </a>
+            </p>
+            <img
+              src={mintedData.json?.image}
+              alt={mintedData.name}
+              className="nft-image"
+            />
           </div>
         )}
-        {walletConnected && (
-          <button
-            onClick={handleMint}
-            className="bg-green-500 text-white px-6 py-3 rounded-full shadow-lg transform transition duration-300 hover:bg-green-700 hover:scale-105"
-          >
-            Mint NFT
-          </button>
-        )}
 
-        {mintInfo && (
-          <div className="mt-6 text-lg">
-            <p className="text-green-600">Minted successfully!</p>
-            <p>Created mint: <span className="font-bold">{mintInfo.mint}</span></p>
-            <p>Created token account: <span className="font-bold">{mintInfo.tokenAccount}</span></p>
+        {typeof window !== "undefined" && (
+          <div className="mint-history">
+            <h3>Mint History</h3>
+            {JSON.parse(localStorage.getItem("mintedNFTs") || "[]").map(
+              (nft, idx) => (
+                <div key={idx}>
+                  <p>
+                    <strong>#{idx + 1}</strong> -{" "}
+                    <a
+                      href={`https://explorer.solana.com/address/${nft.address}?cluster=devnet`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {nft.address}
+                    </a>
+                  </p>
+                  {nft.image && (
+                    <img src={nft.image} alt="Minted NFT" width="120" />
+                  )}
+                </div>
+              )
+            )}
           </div>
         )}
-
-        <div className="flex flex-wrap justify-center p-6 gap-6">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <div
-              key={index}
-              className="max-w-xs mx-4 my-4 bg-white rounded-lg shadow-lg overflow-hidden transform transition duration-300 hover:scale-105 hover:shadow-xl"
-            >
-              <img
-                className="w-full h-48 object-cover rounded-t-lg"
-                src={`https://picsum.photos/200/300?random=${index}`}
-                alt="NFT"
-              />
-              <div className="p-4">
-                <h3 className="text-xl font-semibold text-gray-800">
-                  NFT #{index + 1}
-                </h3>
-                <p className="text-gray-500">This is a random NFT card.</p>
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );
 };
 
-export default App;
+const ContextProvider = ({ children }) => {
+  const network = WalletAdapterNetwork.Devnet;
+  const wallets = [new PhantomWalletAdapter()];
+
+  return (
+    <ConnectionProvider endpoint={clusterApiUrl(network)}>
+      <WalletProvider wallets={wallets} autoConnect>
+        <WalletModalProvider>{children}</WalletModalProvider>
+      </WalletProvider>
+    </ConnectionProvider>
+  );
+};
+
+const RootApp = () => (
+  <ContextProvider>
+    <App />
+  </ContextProvider>
+);
+
+export default RootApp;
